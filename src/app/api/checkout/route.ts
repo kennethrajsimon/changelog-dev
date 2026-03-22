@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       err instanceof Error ? err.message : "Payment setup failed.";
     console.error("Stripe checkout error:", message);
     return NextResponse.json(
-      { error: "Payment setup is not available right now. Please try again later." },
+      { error: `Stripe error: ${message}` },
       { status: 500 }
     );
   }

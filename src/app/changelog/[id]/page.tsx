@@ -1,0 +1,160 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import type { ChangelogEntry } from "@/lib/changelog-generator";
+
+interface ChangelogData {
+  entries: ChangelogEntry[];
+  isPro: boolean;
+}
+
+export default function ChangelogViewPage() {
+  const params = useParams();
+  const id = params.id as string;
+  const [data, setData] = useState<ChangelogData | null>(null);
+  const [notFound, setNotFound] = useState(false);
+
+  useEffect(() => {
+    // Try to load from sessionStorage
+    const stored = sessionStorage.getItem(`changelog_${id}`);
+    if (stored) {
+      try {
+        setData(JSON.parse(stored));
+        return;
+      } catch {
+        // fall through
+      }
+    }
+
+    // Try the generic preview key
+    const preview = sessionStorage.getItem("changelog_preview");
+    if (preview) {
+      try {
+        setData(JSON.parse(preview));
+        return;
+      } catch {
+        // fall through
+      }
+    }
+
+    setNotFound(true);
+  }, [id]);
+
+  if (notFound) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center px-6">
+        <div className="text-center">
+          <div className="mb-4 text-6xl text-gray-700">404</div>
+          <h1 className="mb-2 text-xl font-bold text-white">
+            Changelog not found
+          </h1>
+          <p className="mb-6 text-gray-400">
+            This changelog link may have expired or is only available in the
+            browser that created it.
+          </p>
+          <a href="/app" className="btn-primary">
+            Generate a New Changelog
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-700 border-t-brand-500" />
+      </div>
+    );
+  }
+
+  const { entries, isPro } = data;
+  const showBranding = !isPro;
+
+  return (
+    <div className="min-h-screen bg-gray-950 text-gray-100">
+      {/* Simple header */}
+      <header className="border-b border-gray-800/50 bg-gray-950/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
+          <a href="/" className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-500">
+              <svg
+                className="h-4 w-4 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                />
+              </svg>
+            </div>
+            <span className="text-sm font-semibold text-white">
+              Changelog<span className="text-brand-400">.dev</span>
+            </span>
+          </a>
+          <a href="/app" className="text-xs text-gray-400 hover:text-white transition-colors">
+            Create your own
+          </a>
+        </div>
+      </header>
+
+      {/* Changelog */}
+      <main className="mx-auto max-w-3xl px-6 py-12">
+        <h1 className="mb-8 text-2xl font-bold text-white">Changelog</h1>
+
+        <div className="space-y-6">
+          {entries.map((entry, idx) => (
+            <div key={idx} className="card p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-base font-semibold text-white">
+                  {entry.version}
+                </h2>
+                <span className="text-xs text-gray-500">{entry.date}</span>
+              </div>
+
+              <div className="space-y-4">
+                {entry.categories.map((cat, catIdx) => (
+                  <div key={catIdx}>
+                    <span
+                      className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${cat.badge}`}
+                    >
+                      {cat.name}
+                    </span>
+                    <ul className="mt-2 space-y-1.5 pl-4">
+                      {cat.items.map((item, itemIdx) => (
+                        <li
+                          key={itemIdx}
+                          className="relative text-sm text-gray-300 before:absolute before:-left-3 before:top-2 before:h-1 before:w-1 before:rounded-full before:bg-gray-600"
+                        >
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Branding */}
+        {showBranding && (
+          <div className="mt-10 text-center text-xs text-gray-600">
+            Generated by{" "}
+            <a
+              href="/"
+              className="text-brand-500 hover:text-brand-400 transition-colors"
+            >
+              Changelog.dev
+            </a>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
